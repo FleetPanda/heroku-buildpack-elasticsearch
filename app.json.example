@@ -1,0 +1,36 @@
+{
+  "name": "Your Rails App",
+  "description": "Your Rails application with Elasticsearch",
+  "buildpacks": [
+    {
+      "url": "https://github.com/yourusername/heroku-buildpack-elasticsearch.git"
+    },
+    {
+      "url": "heroku/ruby"
+    }
+  ],
+  "env": {
+    "ELASTICSEARCH_BUILDPACK_ENABLED": {
+      "description": "Enable Elasticsearch buildpack",
+      "value": "true"
+    },
+    "ES_JAVA_OPTS": {
+      "description": "Java options for Elasticsearch",
+      "value": "-Xms512m -Xmx512m"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "standard-1x"
+    },
+    "elasticsearch": {
+      "quantity": 1,
+      "size": "standard-1x"
+    }
+  },
+  "scripts": {
+    "test-setup": "bundle exec rake db:create db:migrate",
+    "test": "bundle exec rspec"
+  }
+}

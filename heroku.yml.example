@@ -1,0 +1,22 @@
+# Example heroku.yml for Heroku CI with Elasticsearch buildpack
+# Place this file in your Rails app's root directory
+
+build:
+  docker:
+    web: Dockerfile
+  config:
+    ELASTICSEARCH_BUILDPACK_ENABLED: true
+    ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+
+run:
+  web: bundle exec puma -t 5:5 -p ${PORT:-3000} -e ${RACK_ENV:-development}
+  elasticsearch: $ELASTICSEARCH_HOME/bin/elasticsearch
+
+release:
+  image: web
+  command:
+    - bundle exec rake db:migrate
+
+test:
+  web:
+    - bundle exec rspec

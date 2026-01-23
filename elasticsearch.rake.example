@@ -1,0 +1,81 @@
+# lib/tasks/elasticsearch.rake
+# Example Rake tasks for Elasticsearch management
+
+namespace :elasticsearch do
+  desc 'Create Elasticsearch indices'
+  task create_indices: :environment do
+    puts "Creating Elasticsearch indices..."
+    
+    # Example: Create a 'posts' index
+    ElasticsearchHelper.create_index('posts', {
+      settings: {
+        number_of_shards: 1,
+        number_of_replicas: 0,
+        analysis: {
+          analyzer: {
+            default: {
+              type: 'standard'
+            }
+          }
+        }
+      },
+      mappings: {
+        properties: {
+          title: { type: 'text' },
+          body: { type: 'text' },
+          author: { type: 'keyword' },
+          created_at: { type: 'date' },
+          updated_at: { type: 'date' }
+        }
+      }
+    })
+    
+    puts "✓ Indices created successfully"
+  end
+
+  desc 'Delete all Elasticsearch indices'
+  task delete_indices: :environment do
+    puts "Deleting Elasticsearch indices..."
+    
+    indices = ElasticsearchHelper.client.indices.get_alias(index: '*')
+    indices.each_key do |index_name|
+      next if index_name.start_with?('.')
+      
+      ElasticsearchHelper.delete_index(index_name)
+      puts "  Deleted: #{index_name}"
+    end
+    
+    puts "✓ All indices deleted"
+  end
+
+  desc 'Show Elasticsearch cluster health'
+  task health: :environment do
+    health = ElasticsearchHelper.health
+    puts "Elasticsearch Cluster Health:"
+    puts "  Status: #{health['status']}"
+    puts "  Active Shards: #{health['active_shards']}"
+    puts "  Initializing Shards: #{health['initializing_shards']}"
+    puts "  Relocating Shards: #{health['relocating_shards']}"
+    puts "  Unassigned Shards: #{health['unassigned_shards']}"
+  end
+
+  desc 'Reindex all documents'
+  task reindex: :environment do
+    puts "Reindexing documents..."
+    
+    # Example: Reindex posts
+    if Post.respond_to?(:reindex)
+      Post.reindex
+      puts "✓ Posts reindexed"
+    end
+    
+    puts "✓ Reindexing complete"
+  end
+
+  desc 'Clear Elasticsearch cache'
+  task clear_cache: :environment do
+    puts "Clearing Elasticsearch cache..."
+    ElasticsearchHelper.client.indices.clear_cache
+    puts "✓ Cache cleared"
+  end
+end

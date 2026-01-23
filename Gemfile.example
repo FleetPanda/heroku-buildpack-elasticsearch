@@ -1,0 +1,46 @@
+# Example Gemfile snippet for Rails app with Elasticsearch
+
+source 'https://rubygems.org'
+git_source(:github) { |repo| "https://github.com/#{repo}.git" }
+
+ruby '3.0.0'
+
+gem 'rails', '~> 6.1.0'
+
+# Elasticsearch client gem (choose one)
+# Option 1: elasticsearch-ruby (official client)
+gem 'elasticsearch', '~> 7.10'
+
+# Option 2: searchkick (higher-level abstraction)
+# gem 'searchkick', '~> 4.4'
+
+# Option 3: tire (older but still functional)
+# gem 'tire', '~> 0.6'
+
+# Other gems...
+gem 'pg', '~> 1.1'
+gem 'puma', '~> 5.0'
+gem 'sass-rails', '>= 6'
+gem 'webpacker', '~> 5.0'
+gem 'turbolinks-rails'
+gem 'jbuilder', '~> 2.7'
+gem 'redis', '~> 4.0'
+gem 'bcrypt', '~> 3.1.7'
+gem 'image_processing', '~> 1.2'
+gem 'aws-sdk-s3', require: false
+
+group :development, :test do
+  gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
+  gem 'rspec-rails'
+  gem 'factory_bot_rails'
+end
+
+group :development do
+  gem 'web-console', '>= 4.1.0'
+  gem 'listen', '~> 3.3'
+end
+
+group :test do
+  gem 'capybara', '>= 3.26'
+  gem 'selenium-webdriver'
+end

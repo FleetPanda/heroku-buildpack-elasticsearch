@@ -1,0 +1,32 @@
+# Buildpack-specific
+.elasticsearch/
+*.tar.gz
+*.log
+
+# OS-specific
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ruby
+.bundle/
+vendor/
+*.gem
+Gemfile.lock
+
+# Testing
+coverage/
+.rspec
+.rspec_status
+
+# Environment
+.env
+.env.local

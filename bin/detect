@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Detect if this is a Ruby on Rails application that needs Elasticsearch
+# This buildpack is designed for Rails apps in CI/CD environments
+
+BUILD_DIR=$1
+
+# Check for Rails Gemfile
+if [ -f "$BUILD_DIR/Gemfile" ]; then
+  # Check if Gemfile contains elasticsearch-related gems
+  if grep -q -E "(elasticsearch|searchkick|tire)" "$BUILD_DIR/Gemfile"; then
+    echo "Elasticsearch 7.10.2 (CI)"
+    exit 0
+  fi
+  
+  # Also detect if there's a .elasticsearch-buildpack marker file
+  if [ -f "$BUILD_DIR/.elasticsearch-buildpack" ]; then
+    echo "Elasticsearch 7.10.2 (CI)"
+    exit 0
+  fi
+fi
+
+# Check for explicit environment variable
+if [ "$ELASTICSEARCH_BUILDPACK_ENABLED" = "true" ]; then
+  echo "Elasticsearch 7.10.2 (CI)"
+  exit 0
+fi
+
+exit 1

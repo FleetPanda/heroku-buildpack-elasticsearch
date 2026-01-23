@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Release script for Elasticsearch buildpack
+# Returns metadata for the runtime
+
+BUILD_DIR=$1
+
+cat << EOF
+---
+default_process_types:
+  elasticsearch: "\$ELASTICSEARCH_HOME/bin/elasticsearch"
+EOF

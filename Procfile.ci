@@ -1,0 +1,4 @@
+# Procfile for Heroku CI/CD with Elasticsearch
+# Use this in your app's Heroku CI configuration
+
+elasticsearch: $ELASTICSEARCH_HOME/bin/elasticsearch

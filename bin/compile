@@ -1,0 +1,167 @@
+#!/bin/bash
+
+set -e
+
+BUILD_DIR=$1
+CACHE_DIR=$2
+ENV_DIR=$3
+
+# Color output helpers
+indent() {
+  sed -u 's/^/       /'
+}
+
+# Elasticsearch version and download URL
+ES_VERSION="7.10.2"
+ES_DOWNLOAD_URL="https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz"
+ES_CACHE_FILE="$CACHE_DIR/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz"
+ES_INSTALL_DIR="$BUILD_DIR/.elasticsearch"
+
+echo "-----> Installing Elasticsearch ${ES_VERSION}"
+
+# Create cache directory if it doesn't exist
+mkdir -p "$CACHE_DIR"
+
+# Download Elasticsearch if not cached
+if [ ! -f "$ES_CACHE_FILE" ]; then
+  echo "-----> Downloading Elasticsearch ${ES_VERSION}..."
+  if ! curl -L --fail --silent --show-error -o "$ES_CACHE_FILE" "$ES_DOWNLOAD_URL"; then
+    echo "Failed to download Elasticsearch from $ES_DOWNLOAD_URL" | indent
+    exit 1
+  fi
+  echo "Downloaded successfully" | indent
+else
+  echo "-----> Using cached Elasticsearch ${ES_VERSION}" | indent
+fi
+
+# Extract Elasticsearch
+echo "-----> Extracting Elasticsearch..."
+mkdir -p "$ES_INSTALL_DIR"
+tar -xzf "$ES_CACHE_FILE" -C "$ES_INSTALL_DIR" --strip-components=1
+
+if [ $? -ne 0 ]; then
+  echo "Failed to extract Elasticsearch" | indent
+  exit 1
+fi
+
+echo "Extracted to $ES_INSTALL_DIR" | indent
+
+# Create Elasticsearch configuration directory
+mkdir -p "$ES_INSTALL_DIR/config/elasticsearch"
+
+# Create minimal elasticsearch.yml for CI environment
+cat > "$ES_INSTALL_DIR/config/elasticsearch.yml" << 'EOF'
+# Elasticsearch configuration for Heroku CI/CD
+cluster.name: heroku-ci
+node.name: ci-node
+network.host: 127.0.0.1
+http.port: 9200
+transport.port: 9300
+
+# CI-specific settings
+discovery.type: single-node
+action.destructive_requires_name: false
+
+# Disable X-Pack security for CI (can be enabled if needed)
+xpack.security.enabled: false
+EOF
+
+echo "Created elasticsearch.yml configuration" | indent
+
+# Create JVM options for CI environment (reduced memory footprint)
+cat > "$ES_INSTALL_DIR/config/jvm.options" << 'EOF'
+## JVM configuration for Heroku CI/CD environment
+## Reduced memory footprint suitable for testing
+
+# Heap size - set to 512m for CI environments
+-Xms512m
+-Xmx512m
+
+# GC configuration
+-XX:+UseG1GC
+-XX:G1ReservePercent=25
+-XX:InitiatingHeapOccupancyPercent=30
+
+# Other JVM options
+-XX:+DisableExplicitGC
+-XX:+AlwaysPreTouch
+-XX:+HeapDumpOnOutOfMemoryError
+EOF
+
+echo "Created jvm.options configuration" | indent
+
+# Create startup script
+mkdir -p "$ES_INSTALL_DIR/bin/heroku"
+cat > "$ES_INSTALL_DIR/bin/heroku/elasticsearch.sh" << 'EOF'
+#!/bin/bash
+# Elasticsearch startup script for Heroku CI/CD
+
+set -e
+
+ES_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ES_JAVA_OPTS="${ES_JAVA_OPTS:--Xms512m -Xmx512m}"
+
+export ES_JAVA_OPTS
+
+# Ensure logs directory exists
+mkdir -p "$ES_HOME/logs"
+
+# Start Elasticsearch
+exec "$ES_HOME/bin/elasticsearch" "$@"
+EOF
+
+chmod +x "$ES_INSTALL_DIR/bin/heroku/elasticsearch.sh"
+echo "Created startup script" | indent
+
+# Create a helper script for Rails apps to wait for Elasticsearch
+cat > "$BUILD_DIR/.elasticsearch/wait-for-elasticsearch.sh" << 'EOF'
+#!/bin/bash
+# Wait for Elasticsearch to be ready
+
+MAX_ATTEMPTS=30
+ATTEMPT=0
+ES_URL="http://127.0.0.1:9200"
+
+echo "Waiting for Elasticsearch to be ready..."
+
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+  if curl -s "$ES_URL/_cluster/health" > /dev/null 2>&1; then
+    echo "Elasticsearch is ready!"
+    exit 0
+  fi
+  
+  ATTEMPT=$((ATTEMPT + 1))
+  echo "Attempt $ATTEMPT/$MAX_ATTEMPTS - Elasticsearch not ready yet, waiting..."
+  sleep 1
+done
+
+echo "Elasticsearch failed to start within timeout"
+exit 1
+EOF
+
+chmod +x "$BUILD_DIR/.elasticsearch/wait-for-elasticsearch.sh"
+echo "Created wait-for-elasticsearch helper script" | indent
+
+# Create environment setup script for .profile.d
+mkdir -p "$BUILD_DIR/.profile.d"
+cat > "$BUILD_DIR/.profile.d/elasticsearch.sh" << 'EOF'
+#!/bin/bash
+# Elasticsearch environment setup for Heroku
+
+export ELASTICSEARCH_HOME="$HOME/.elasticsearch"
+export PATH="$ELASTICSEARCH_HOME/bin:$PATH"
+export ELASTICSEARCH_URL="http://127.0.0.1:9200"
+
+# Set Java options for Elasticsearch if not already set
+if [ -z "$ES_JAVA_OPTS" ]; then
+  export ES_JAVA_OPTS="-Xms512m -Xmx512m"
+fi
+EOF
+
+chmod +x "$BUILD_DIR/.profile.d/elasticsearch.sh"
+echo "Created .profile.d/elasticsearch.sh" | indent
+
+echo "-----> Elasticsearch ${ES_VERSION} installation complete"
+echo "Elasticsearch is installed at: $ES_INSTALL_DIR" | indent
+echo "Start with: elasticsearch" | indent
+echo "Access at: http://127.0.0.1:9200" | indent
