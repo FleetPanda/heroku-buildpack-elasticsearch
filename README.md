@@ -26,7 +26,7 @@ To use this buildpack, you need to add it to your Heroku app's buildpacks list. 
 
 ```bash
 # Add the buildpack to your app (replace with your GitHub repo URL)
-heroku buildpacks:add https://github.com/yourusername/heroku-buildpack-elasticsearch.git
+heroku buildpacks:add https://github.com/FleetPanda/heroku-buildpack-elasticsearch.git
 
 # Ensure the Ruby buildpack is also present
 heroku buildpacks:add heroku/ruby
@@ -41,7 +41,7 @@ If you are using Heroku CI with `app.json`, add the buildpack to the `buildpacks
   "name": "Your Rails App",
   "buildpacks": [
     {
-      "url": "https://github.com/yourusername/heroku-buildpack-elasticsearch.git"
+      "url": "https://github.com/FleetPanda/heroku-buildpack-elasticsearch.git"
     },
     {
       "url": "heroku/ruby"
