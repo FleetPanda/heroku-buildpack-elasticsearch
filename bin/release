@@ -3,10 +3,8 @@
 # Release script for Elasticsearch buildpack
 # Returns metadata for the runtime
 
-BUILD_DIR=$1
-
-cat << EOF
+cat << 'EOF'
 ---
 default_process_types:
-  elasticsearch: \$HOME/.elasticsearch/bin/elasticsearch
+  elasticsearch: $HOME/.elasticsearch/bin/elasticsearch
 EOF
