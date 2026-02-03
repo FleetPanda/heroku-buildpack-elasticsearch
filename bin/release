@@ -8,5 +8,5 @@ BUILD_DIR=$1
 cat << EOF
 ---
 default_process_types:
-  elasticsearch: $BUILD_DIR/.elasticsearch/bin/elasticsearch
+  elasticsearch: \$HOME/.elasticsearch/bin/elasticsearch
 EOF
